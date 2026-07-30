@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ video.original_filename }}</title>
+</head>
+<body>
+
+<h2>{{ video.original_filename }}</h2>
+
+<video width="800" controls>
+    <source src="/stream/{{ video.id }}" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<br><br>
+
+<a href="/my-videos">← Back to My Videos</a>
+
+</body>
+</html>

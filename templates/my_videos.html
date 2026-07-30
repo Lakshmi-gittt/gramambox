@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Videos</title>
+</head>
+<body>
+<h1>My Videos</h1>
+
+{% for video in videos %}
+
+<h3>{{ video.original_filename }}</h3>
+
+<p>
+Stored File:
+{{ video.stored_filename }}
+</p>
+
+<p>
+Uploaded:
+{{ video.uploaded_at }}
+</p>
+
+<p>
+Share Link:
+<a href="{{ request.base_url }}v/{{ video.stored_filename }}">
+    {{ request.base_url }}v/{{ video.stored_filename }}
+</a>
+</p>
+
+<hr>
+
+{% endfor %}

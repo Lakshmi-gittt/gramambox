@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ video.original_filename }}</title>
+</head>
+<body>
+
+<h2>{{ video.original_filename }}</h2>
+
+<video width="800" controls>
+    <source src="/public-stream/{{ video.stored_filename }}" type="video/mp4">
+</video>
+
+</body>
+</html>
