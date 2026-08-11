@@ -1,20 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ video.original_filename }}</title>
+    <title>My Videos</title>
 </head>
+
 <body>
 
-<h2>{{ video.original_filename }}</h2>
+<h1>My Videos</h1>
 
-<video width="800" controls>
-    <source src="/stream/{{ video.id }}" type="video/mp4">
-    Your browser does not support the video tag.
-</video>
+{% for video in videos %}
 
-<br><br>
+<div>
 
-<a href="/my-videos">← Back to My Videos</a>
+    <img
+        src="/thumbnail/{{ video.thumbnail }}"
+        width="250"
+        alt="Video thumbnail"
+    >
+
+    <h3>{{ video.original_filename }}</h3>
+
+    <p>
+        Uploaded: {{ video.uploaded_at }}
+    </p>
+
+    <p>
+        Share Link:
+        <a href="{{ request.base_url }}v/{{ video.stored_filename }}">
+            {{ request.base_url }}v/{{ video.stored_filename }}
+        </a>
+    </p>
+
+</div>
+
+<hr>
+
+{% endfor %}
 
 </body>
 </html>

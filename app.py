@@ -1,9 +1,10 @@
-
+import subprocess
 from fastapi import FastAPI, Request, Form, Depends
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
 from security import hash_password
 from security import verify_password
+from apscheduler.schedulers.background import BackgroundScheduler
 
 import models
 from database import Base, engine,get_db
@@ -24,6 +25,52 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
+
+def cleanup_expired_videos():
+    db = next(get_db())
+
+    try:
+        expired_videos = db.query(models.Video).filter(
+            models.Video.expires_at <= datetime.utcnow()
+        ).all()
+
+        for video in expired_videos:
+
+            # Delete video file
+            video_path = os.path.join(
+                "uploads",
+                video.stored_filename
+            )
+
+            if os.path.exists(video_path):
+                os.remove(video_path)
+
+            # Delete thumbnail
+            if video.thumbnail:
+                thumbnail_path = os.path.join(
+                    "thumbnails",
+                    video.thumbnail
+                )
+
+                if os.path.exists(thumbnail_path):
+                    os.remove(thumbnail_path)
+
+            # Delete database record
+            db.delete(video)
+
+        db.commit()
+
+    finally:
+        db.close()
+scheduler = BackgroundScheduler()
+
+scheduler.add_job(
+    cleanup_expired_videos,
+    "interval",
+    minutes=10
+)
+
+scheduler.start()
 
 @app.get("/")
 def home(request: Request):
@@ -120,7 +167,6 @@ def test():
     
     return payload
 
-
 @app.post("/upload")
 def upload_video(
     video: UploadFile = File(...),
@@ -128,6 +174,7 @@ def upload_video(
     current_user=Depends(get_current_user)
 ):
     os.makedirs("uploads", exist_ok=True)
+    os.makedirs("thumbnails", exist_ok=True)
 
     extension = os.path.splitext(video.filename)[1]
     unique_filename = f"{uuid.uuid4()}{extension}"
@@ -140,9 +187,28 @@ def upload_video(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(video.file, buffer)
 
+    thumbnail_name = f"{uuid.uuid4()}.jpg"
+
+    thumbnail_path = os.path.join(
+        "thumbnails",
+        thumbnail_name
+    )
+
+    subprocess.run([
+        "ffmpeg",
+        "-i",
+        file_path,
+        "-ss",
+        "00:00:01",
+        "-frames:v",
+        "1",
+        thumbnail_path
+    ])
+
     video_data = models.Video(
         original_filename=video.filename,
         stored_filename=unique_filename,
+        thumbnail=thumbnail_name,
         owner_id=current_user.id,
         expires_at=datetime.utcnow() + timedelta(hours=24)
     )
@@ -153,9 +219,52 @@ def upload_video(
     return {
         "message": "Video uploaded successfully",
         "original_filename": video.filename,
-        "stored_filename": unique_filename
+        "stored_filename": unique_filename,
+        "thumbnail": thumbnail_name
     }
 
+@app.delete("/delete/{video_id}")
+def delete_video(
+    video_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    video = db.query(models.Video).filter(
+        models.Video.id == video_id,
+        models.Video.owner_id == current_user.id
+    ).first()
+
+    if video is None:
+        return {
+            "message": "Video not found"
+        }
+
+    # Delete video file
+    video_path = os.path.join(
+        "uploads",
+        video.stored_filename
+    )
+
+    if os.path.exists(video_path):
+        os.remove(video_path)
+
+    # Delete thumbnail if it exists
+    if video.thumbnail:
+        thumbnail_path = os.path.join(
+            "thumbnails",
+            video.thumbnail
+        )
+
+        if os.path.exists(thumbnail_path):
+            os.remove(thumbnail_path)
+
+    # Delete database record
+    db.delete(video)
+    db.commit()
+
+    return {
+        "message": "Video deleted successfully"
+    }
 
 @app.get("/my-videos")
 def my_videos(
@@ -253,6 +362,8 @@ def public_video(
             request=request,
             name="expired.html"
         )
+    video.views += 1
+    db.commit()
 
     return templates.TemplateResponse(
         request=request,
@@ -312,3 +423,10 @@ def dashboard(
             "videos": videos
         }
     )
+
+@app.get("/thumbnail/{filename}")
+def get_thumbnail(filename: str):
+    return FileResponse(
+        f"thumbnails/{filename}",
+        media_type="image/jpeg"
+    ) 
