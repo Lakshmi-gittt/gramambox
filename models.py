@@ -32,3 +32,4 @@ class Video(Base):
     expires_at = Column(DateTime)
 
     views = Column(Integer, default=0)
+    cloudinary_public_id = Column(String, nullable=True)

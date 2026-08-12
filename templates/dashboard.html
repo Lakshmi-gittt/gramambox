@@ -1,25 +1,186 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>StoryDrop Dashboard</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>StoryDrop Dashboard</h1>
+{% block title %}Dashboard - GramamBox{% endblock %}
 
-<p>Welcome {{ user.email }}</p>
+{% block content %}
 
-<hr>
+<div class="dashboard">
 
-<h3>Total Videos: {{ videos|length }}</h3>
+    <div class="dashboard-header">
+        <div>
+            <h1>Welcome back 👋</h1>
+            <p>{{ user.email }}</p>
+        </div>
 
-<p>
-<a href="/upload">Upload Video</a>
-</p>
+        <a href="/upload" class="primary-btn">
+            + Upload Video
+        </a>
+    </div>
 
-<p>
-<a href="/my-videos">My Videos</a>
-</p>
+    <div class="stats">
 
-</body>
-</html>
+        <div class="stat-card">
+            <span>Total Videos</span>
+            <strong>{{ videos|length }}</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Total Views</span>
+            <strong>
+                {{ videos | sum(attribute="views") }}
+            </strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Active Videos</span>
+            <strong>
+                {{ videos | selectattr("expires_at", "gt", current_time) | list | length }}
+            </strong>
+        </div>
+
+    </div>
+
+
+    <div class="section-header">
+        <h2>Your Videos</h2>
+        <a href="/my-videos">View all</a>
+    </div>
+
+
+    {% if videos %}
+
+    <div class="video-grid">
+
+        {% for video in videos %}
+
+        <div class="video-card">
+
+            <div class="thumbnail-container">
+
+                {% if video.cloudinary_thumbnail_url %}
+
+                <img
+                    src="{{ video.cloudinary_thumbnail_url }}"
+                    alt="{{ video.original_filename }}"
+                >
+
+                {% else %}
+
+                <div class="no-thumbnail">
+                    No Preview
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="video-info">
+
+                <h3 title="{{ video.original_filename }}">
+                    {{ video.original_filename }}
+                </h3>
+
+                <p>
+                    {{ video.views }} views
+                </p>
+
+                <p class="expiry">
+                    Expires:
+                    {{ video.expires_at.strftime("%d %b %Y, %I:%M %p") }}
+                </p>
+
+            </div>
+
+
+            <div class="video-actions">
+
+                <a
+                    href="/watch/{{ video.id }}"
+                    class="secondary-btn"
+                >
+                    Watch
+                </a>
+
+                <button
+                    onclick="copyLink('{{ request.base_url }}v/{{ video.stored_filename }}')"
+                    class="secondary-btn"
+                >
+                    Share
+                </button>
+
+                <button
+                    onclick="deleteVideo('{{ video.id }}')"
+                    class="delete-btn"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <h2>No videos yet</h2>
+
+        <p>
+            Upload your first temporary video.
+        </p>
+
+        <a href="/upload" class="primary-btn">
+            Upload Video
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<script>
+
+async function copyLink(link) {
+
+    await navigator.clipboard.writeText(link);
+
+    alert("Share link copied!");
+
+}
+
+
+async function deleteVideo(videoId) {
+
+    if (!confirm("Delete this video?")) {
+        return;
+    }
+
+    const response = await fetch(
+        `/delete/${videoId}`,
+        {
+            method: "DELETE"
+        }
+    );
+
+    if (response.ok) {
+
+        location.reload();
+
+    } else {
+
+        alert("Failed to delete video.");
+
+    }
+
+}
+
+</script>
+
+{% endblock %}

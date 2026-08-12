@@ -1,31 +1,45 @@
-from jose import jwt
-from datetime import datetime, timedelta
-from jose import JWTError
+from datetime import datetime, timedelta, timezone
 
-SECRET_KEY = "this_is_my_secret_key"
+from fastapi import Request, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from jose import jwt, JWTError
+
+from database import get_db
+from models import User
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is missing from .env")
 
 ALGORITHM = "HS256"
-
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 def create_access_token(data: dict):
-
     to_encode = data.copy()
 
-    expire = datetime.utcnow() + timedelta(
+    expire = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire
+    })
 
-    encoded_jwt = jwt.encode(
+    return jwt.encode(
         to_encode,
         SECRET_KEY,
         algorithm=ALGORITHM
     )
 
-    return encoded_jwt
+
 def verify_access_token(token: str):
     try:
         payload = jwt.decode(
@@ -33,43 +47,43 @@ def verify_access_token(token: str):
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
-        return payload
+
+        email = payload.get("sub")
+
+        if email is None:
+            return None
+
+        return email
 
     except JWTError:
         return None
 
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException, Cookie
-import models
-from database import get_db
 
 def get_current_user(
-    access_token: str = Cookie(None),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    if access_token is None:
+    token = request.cookies.get("access_token")
+
+    if not token:
         raise HTTPException(
             status_code=401,
-            detail="Not logged in"
+            detail="Not authenticated"
         )
 
-    payload = verify_access_token(access_token)
+    email = verify_access_token(token)
 
-    if payload is None:
+    if not email:
         raise HTTPException(
             status_code=401,
-            detail="Invalid token"
+            detail="Invalid or expired token"
         )
 
-    email = payload.get("sub")
-
-    user = db.query(models.User).filter(
-        models.User.email == email
+    user = db.query(User).filter(
+        User.email == email
     ).first()
 
-    if user is None:
+    if not user:
         raise HTTPException(
             status_code=401,
             detail="User not found"

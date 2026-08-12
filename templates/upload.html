@@ -1,23 +1,292 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload Video</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Upload Video</h1>
+{% block title %}Upload Video - GramamBox{% endblock %}
 
-<form action="/upload" method="post" enctype="multipart/form-data">
+{% block content %}
 
-    <input type="file" name="video">
+<div class="upload-page">
 
-    <br><br>
+    <div class="upload-card">
 
-    <button type="submit">
-        Upload
-    </button>
+        <h1>Upload a video</h1>
+        <p class="subtitle">
+            Your video will be available for 24 hours.
+        </p>
 
-</form>
+        <form id="uploadForm">
 
-</body>
-</html>
+            <label class="drop-zone" id="dropZone">
+
+                <input
+                    type="file"
+                    id="videoInput"
+                    name="video"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    hidden
+                    required
+                >
+
+                <div id="uploadPrompt">
+                    <div class="upload-icon">↑</div>
+
+                    <h3>Choose a video</h3>
+
+                    <p>
+                        Click here or drag and drop
+                    </p>
+
+                    <small>
+                        MP4, WebM or MOV
+                    </small>
+                </div>
+
+                <div id="fileInfo" class="file-info hidden">
+                    <strong id="fileName"></strong>
+                    <span id="fileSize"></span>
+                </div>
+
+            </label>
+
+
+            <div id="progressContainer" class="hidden">
+
+                <div class="progress-header">
+                    <span>Uploading...</span>
+                    <span id="progressText">0%</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div id="progressBar"></div>
+                </div>
+
+            </div>
+
+
+            <div id="message"></div>
+
+
+            <button
+                type="submit"
+                id="uploadButton"
+                class="primary-btn"
+            >
+                Upload Video
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const form = document.getElementById("uploadForm");
+const input = document.getElementById("videoInput");
+const dropZone = document.getElementById("dropZone");
+
+const uploadPrompt = document.getElementById("uploadPrompt");
+const fileInfo = document.getElementById("fileInfo");
+
+const fileName = document.getElementById("fileName");
+const fileSize = document.getElementById("fileSize");
+
+const uploadButton = document.getElementById("uploadButton");
+
+const progressContainer =
+    document.getElementById("progressContainer");
+
+const progressBar =
+    document.getElementById("progressBar");
+
+const progressText =
+    document.getElementById("progressText");
+
+const message =
+    document.getElementById("message");
+
+
+input.addEventListener("change", function () {
+
+    if (this.files.length > 0) {
+        showFile(this.files[0]);
+    }
+
+});
+
+
+function showFile(file) {
+
+    uploadPrompt.classList.add("hidden");
+    fileInfo.classList.remove("hidden");
+
+    fileName.textContent = file.name;
+
+    fileSize.textContent =
+        formatFileSize(file.size);
+
+}
+
+
+function formatFileSize(bytes) {
+
+    if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + " KB";
+    }
+
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+
+}
+
+
+dropZone.addEventListener("dragover", function (e) {
+
+    e.preventDefault();
+
+    dropZone.classList.add("dragging");
+
+});
+
+
+dropZone.addEventListener("dragleave", function () {
+
+    dropZone.classList.remove("dragging");
+
+});
+
+
+dropZone.addEventListener("drop", function (e) {
+
+    e.preventDefault();
+
+    dropZone.classList.remove("dragging");
+
+    const files = e.dataTransfer.files;
+
+    if (files.length > 0) {
+
+        input.files = files;
+
+        showFile(files[0]);
+
+    }
+
+});
+
+
+form.addEventListener("submit", function (e) {
+
+    e.preventDefault();
+
+    if (!input.files.length) {
+
+        showMessage(
+            "Please select a video first.",
+            "error"
+        );
+
+        return;
+
+    }
+
+    uploadVideo(input.files[0]);
+
+});
+
+
+function uploadVideo(file) {
+
+    const formData = new FormData();
+
+    formData.append("video", file);
+
+    uploadButton.disabled = true;
+    uploadButton.textContent = "Uploading...";
+
+    progressContainer.classList.remove("hidden");
+
+    message.innerHTML = "";
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", "/upload");
+
+    xhr.upload.addEventListener("progress", function (event) {
+
+        if (event.lengthComputable) {
+
+            const percent =
+                Math.round(
+                    (event.loaded / event.total) * 100
+                );
+
+            progressBar.style.width = percent + "%";
+
+            progressText.textContent =
+                percent + "%";
+
+        }
+
+    });
+
+
+    xhr.onload = function () {
+
+        uploadButton.disabled = false;
+        uploadButton.textContent = "Upload Video";
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+
+            showMessage(
+                "Video uploaded successfully!",
+                "success"
+            );
+
+            setTimeout(function () {
+
+                window.location.href = "/dashboard";
+
+            }, 1000);
+
+        } else {
+
+            showMessage(
+                "Upload failed. Please try again.",
+                "error"
+            );
+
+        }
+
+    };
+
+
+    xhr.onerror = function () {
+
+        uploadButton.disabled = false;
+        uploadButton.textContent = "Upload Video";
+
+        showMessage(
+            "Network error. Please try again.",
+            "error"
+        );
+
+    };
+
+
+    xhr.send(formData);
+
+}
+
+
+function showMessage(text, type) {
+
+    message.textContent = text;
+
+    message.className = "message " + type;
+
+}
+
+</script>
+
+{% endblock %}

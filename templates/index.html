@@ -1,14 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>StoryDrop</title>
-</head>
+{% extends "base.html" %}
 
-<body>
+{% block title %}GramamBox{% endblock %}
 
-<h1>StoryDrop</h1>
+{% block content %}
 
-<p>Welcome!</p>
+<section class="hero">
 
-</body>
-</html>
+    <div class="hero-content">
+
+        <h1>
+            Drop it.<br>
+            Share it.<br>
+            Forget it.
+        </h1>
+
+        <p>
+            Upload a video, share the link,
+            and let it disappear after 24 hours.
+        </p>
+
+        <a href="/upload" class="primary-btn">
+            Upload a video
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}

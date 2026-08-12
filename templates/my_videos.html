@@ -1,172 +1,114 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Videos - StoryDrop</title>
+{% extends "base.html" %}
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 30px;
-        }
+{% block title %}My Videos - GramamBox{% endblock %}
 
-        h1 {
-            text-align: center;
-        }
+{% block content %}
 
-        .video-card {
-            background: white;
-            max-width: 700px;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+<div class="page">
 
-        .thumbnail {
-            width: 250px;
-            border-radius: 8px;
-            display: block;
-            margin-bottom: 15px;
-        }
+    <div class="page-header">
 
-        .video-card h3 {
-            margin-top: 0;
-        }
+        <h1>My Videos</h1>
 
-        .share-box {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .share-box input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .copy-btn {
-            background: #222;
-            color: white;
-        }
-
-        .delete-btn {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .stats {
-            color: #666;
-        }
-    </style>
-</head>
-
-<body>
-
-<h1>My Videos</h1>
-
-{% for video in videos %}
-
-<div class="video-card">
-
-    <!-- Thumbnail -->
-    <img
-        class="thumbnail"
-        src="/thumbnail/{{ video.thumbnail }}"
-        alt="Video thumbnail"
-    >
-
-    <h3>{{ video.original_filename }}</h3>
-
-    <p class="stats">
-        👁 {{ video.views }} views
-    </p>
-
-    <p>
-        Uploaded:
-        {{ video.uploaded_at }}
-    </p>
-
-    <div class="share-box">
-
-        <input
-            type="text"
-            id="link-{{ video.id }}"
-            value="{{ request.base_url }}v/{{ video.stored_filename }}"
-            readonly
-        >
-
-        <button
-            class="copy-btn"
-            onclick="copyLink('{{ video.id }}')"
-        >
-            Copy
-        </button>
-
-        <button
-            class="delete-btn"
-            onclick="deleteVideo('{{ video.id }}')"
-        >
-            Delete
-        </button>
+        <p>
+            Your shared videos disappear after 24 hours.
+        </p>
 
     </div>
 
+
+    {% if videos %}
+
+    <div class="video-grid">
+
+        {% for video in videos %}
+
+        <div class="video-card">
+
+            {% if video.cloudinary_thumbnail_url %}
+
+            <img
+                src="{{ video.cloudinary_thumbnail_url }}"
+                alt="Video thumbnail"
+            >
+
+            {% endif %}
+
+
+            <div class="video-info">
+
+                <h3>
+                    {{ video.original_filename }}
+                </h3>
+
+                <div class="video-meta">
+
+                    👁 {{ video.views }} views
+
+                    <br>
+
+                    Expires:
+                    {{ video.expires_at }}
+
+                </div>
+
+
+                <div class="share-box">
+
+                    <input
+                        type="text"
+                        id="link-{{ video.id }}"
+                        value="{{ request.base_url }}v/{{ video.stored_filename }}"
+                        readonly
+                    >
+
+                    <button
+                        class="copy-btn"
+                        onclick="copyLink('{{ video.id }}')"
+                    >
+                        Copy
+                    </button>
+
+                </div>
+
+
+                <button
+                    class="delete-btn"
+                    style="margin-top: 10px;"
+                    onclick="deleteVideo('{{ video.id }}')"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="upload-box">
+
+        <h2>No videos yet</h2>
+
+        <p>
+            Upload your first video to get started.
+        </p>
+
+        <a
+            href="/upload"
+            class="primary-btn"
+        >
+            Upload video
+        </a>
+
+    </div>
+
+    {% endif %}
+
 </div>
 
-{% endfor %}
-
-<script>
-
-function copyLink(videoId) {
-
-    const link = document.getElementById(
-        "link-" + videoId
-    );
-
-    navigator.clipboard.writeText(link.value);
-
-    alert("Share link copied!");
-}
-
-
-async function deleteVideo(videoId) {
-
-    const confirmed = confirm(
-        "Are you sure you want to delete this video?"
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    const response = await fetch(
-        "/delete/" + videoId,
-        {
-            method: "DELETE"
-        }
-    );
-
-    const data = await response.json();
-
-    alert(data.message);
-
-    if (response.ok) {
-        location.reload();
-    }
-}
-
-</script>
-
-</body>
-</html>
+{% endblock %}
