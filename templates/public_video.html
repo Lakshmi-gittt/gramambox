@@ -1,15 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ video.original_filename }}</title>
+    <title>{{ video.original_filename }} - StoryDrop</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 30px 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        video {
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 12px;
+            background: black;
+        }
+
+        .info {
+            margin-top: 15px;
+            color: #aaa;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>{{ video.original_filename }}</h2>
+<div class="container">
 
-<video width="800" controls>
-    <source src="/public-stream/{{ video.stored_filename }}" type="video/mp4">
-</video>
+    <h1>{{ video.original_filename }}</h1>
+
+    <video controls autoplay playsinline>
+        <source
+            src="/public-stream/{{ video.stored_filename }}"
+            type="video/mp4"
+        >
+
+        Your browser does not support video playback.
+    </video>
+
+    <div class="info">
+        👁 {{ video.views }} views
+    </div>
+
+    <div class="info">
+        This video expires after 24 hours.
+    </div>
+
+</div>
 
 </body>
 </html>

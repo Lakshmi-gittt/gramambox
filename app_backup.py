@@ -187,7 +187,6 @@ def upload_video(
     os.makedirs("uploads", exist_ok=True)
     os.makedirs("thumbnails", exist_ok=True)
 
-    # Generate unique filename
     extension = os.path.splitext(video.filename)[1]
     unique_filename = f"{uuid.uuid4()}{extension}"
 
@@ -196,11 +195,9 @@ def upload_video(
         unique_filename
     )
 
-    # Save temporarily
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(video.file, buffer)
 
-    # Generate thumbnail using FFmpeg
     thumbnail_name = f"{uuid.uuid4()}.jpg"
 
     thumbnail_path = os.path.join(
@@ -217,31 +214,16 @@ def upload_video(
         "-frames:v",
         "1",
         thumbnail_path
-    ], check=True)
+    ])
 
-    # Upload video to Cloudinary
-    video_result = cloudinary.uploader.upload(
-        file_path,
-        resource_type="video",
-        folder="storydrop/videos"
-    )
-
-    # Upload thumbnail to Cloudinary
-    thumbnail_result = cloudinary.uploader.upload(
-        thumbnail_path,
-        folder="storydrop/thumbnails"
-    )
-
-    # Save Cloudinary URLs in database
     video_data = models.Video(
-    original_filename=video.filename,
-    stored_filename=unique_filename,
-    thumbnail=thumbnail_name,
-    cloudinary_video_url=video_result["secure_url"],
-    cloudinary_thumbnail_url=thumbnail_result["secure_url"],
-    owner_id=current_user.id,
-    expires_at=datetime.utcnow() + timedelta(hours=24)
-)
+        original_filename=video.filename,
+        stored_filename=unique_filename,
+        thumbnail=thumbnail_name,
+        owner_id=current_user.id,
+        expires_at=datetime.utcnow() + timedelta(hours=24)
+    )
+
     db.add(video_data)
     db.commit()
 
@@ -249,9 +231,7 @@ def upload_video(
         "message": "Video uploaded successfully",
         "original_filename": video.filename,
         "stored_filename": unique_filename,
-        "thumbnail": thumbnail_name,
-        "cloudinary_video": video_result["secure_url"],
-        "cloudinary_thumbnail": thumbnail_result["secure_url"]
+        "thumbnail": thumbnail_name
     }
 
 @app.delete("/delete/{video_id}")
