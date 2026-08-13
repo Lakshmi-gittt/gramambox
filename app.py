@@ -434,11 +434,13 @@ def view_video(
 
     db.commit()
 
-    return RedirectResponse(
-        url=video.cloudinary_video_url,
-        status_code=302
+     return templates.TemplateResponse(
+        "video.html",
+        {
+            "request": request,
+            "video": video
+        }
     )
-
 
 # =============================
 # Upload page
