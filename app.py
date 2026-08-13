@@ -421,7 +421,7 @@ def view_video(
             "message": "Video not found"
         }
 
-    if (
+if (
     video.expires_at
     and video.expires_at <= datetime.utcnow()
 ):
