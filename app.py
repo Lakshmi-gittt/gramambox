@@ -404,10 +404,10 @@ def watch_video(
 # =============================
 # Public share link
 # =============================
-
 @app.get("/v/{stored_filename}")
 def view_video(
     stored_filename: str,
+    request: Request,
     db: Session = Depends(get_db)
 ):
 
@@ -416,32 +416,29 @@ def view_video(
     ).first()
 
     if not video:
-
         return {
             "message": "Video not found"
         }
 
-if (
-    video.expires_at
-    and video.expires_at <= datetime.utcnow()
-):
+    if (
+        video.expires_at
+        and video.expires_at <= datetime.utcnow()
+    ):
+        return {
+            "message": "This video has expired"
+        }
 
-    return {
-        "message": "This video has expired"
-    }
+    video.views += 1
 
-video.views += 1
+    db.commit()
 
-db.commit()
-
-return templates.TemplateResponse(
-    "video.html",
-    {
-        "request": request,
-        "video": video
-    }
-)
-
+    return templates.TemplateResponse(
+        "video.html",
+        {
+            "request": request,
+            "video": video
+        }
+    )
 # =============================
 # Upload page
 # =============================
