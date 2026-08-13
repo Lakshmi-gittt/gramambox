@@ -422,25 +422,25 @@ def view_video(
         }
 
     if (
-        video.expires_at
-        and video.expires_at <= datetime.utcnow()
-    ):
+    video.expires_at
+    and video.expires_at <= datetime.utcnow()
+):
 
-        return {
-            "message": "This video has expired"
-        }
+    return {
+        "message": "This video has expired"
+    }
 
-    video.views += 1
+video.views += 1
 
-    db.commit()
+db.commit()
 
-      return templates.TemplateResponse(
-        "video.html",
-        {
-            "request": request,
-            "video": video
-        }
-    )
+return templates.TemplateResponse(
+    "video.html",
+    {
+        "request": request,
+        "video": video
+    }
+)
 
 # =============================
 # Upload page
