@@ -434,7 +434,7 @@ def view_video(
 
     db.commit()
 
-     return templates.TemplateResponse(
+      return templates.TemplateResponse(
         "video.html",
         {
             "request": request,
